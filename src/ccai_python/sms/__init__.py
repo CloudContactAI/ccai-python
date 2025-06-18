@@ -6,5 +6,6 @@ SMS package for the CCAI Python client
 """
 
 from .sms import SMS, Account, SMSCampaign, SMSResponse, SMSOptions
+from .mms import MMS
 
-__all__ = ['SMS', 'Account', 'SMSCampaign', 'SMSResponse', 'SMSOptions']
+__all__ = ['SMS', 'MMS', 'Account', 'SMSCampaign', 'SMSResponse', 'SMSOptions']

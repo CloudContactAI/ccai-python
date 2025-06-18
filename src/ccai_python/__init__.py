@@ -7,10 +7,12 @@ Main export file for the CCAI Python module
 
 from .ccai import CCAI, Account, CCAIConfig
 from .sms.sms import SMS, SMSCampaign, SMSResponse, SMSOptions
+from .sms.mms import MMS
 
 __all__ = [
     'CCAI',
     'SMS',
+    'MMS',
     'Account',
     'CCAIConfig',
     'SMSCampaign',

@@ -11,6 +11,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from .sms.sms import SMS
+from .sms.mms import MMS
 
 
 class Account(BaseModel):
@@ -71,8 +72,9 @@ class CCAI:
             base_url=base_url or "https://core.cloudcontactai.com/api"
         )
         
-        # Initialize the SMS service
+        # Initialize the SMS and MMS services
         self.sms = SMS(self)
+        self.mms = MMS(self)
     
     @property
     def client_id(self) -> str:
