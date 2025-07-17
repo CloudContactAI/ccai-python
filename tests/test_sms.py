@@ -11,20 +11,21 @@ from unittest.mock import patch, MagicMock
 from ccai_python import CCAI, Account, SMSOptions
 
 
+
 class TestSMS(unittest.TestCase):
     """Test cases for the SMS service"""
     
     def setUp(self):
         """Set up test fixtures"""
-        self.client_id = "test-client-id"
-        self.api_key = "test-api-key"
+        self.client_id = "2682"
+        self.api_key = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJpbmZvQGFsbGNvZGUuY29tIiwiaXNzIjoiY2xvdWRjb250YWN0IiwibmJmIjoxNzE5NDQwMjM2LCJpYXQiOjE3MTk0NDAyMzYsInJvbGUiOiJVU0VSIiwiY2xpZW50SWQiOjI2ODIsImlkIjoyNzY0LCJ0eXBlIjoiQVBJX0tFWSIsImtleV9yYW5kb21faWQiOiI1MGRiOTUzZC1hMjUxLTRmZjMtODI5Yi01NjIyOGRhOGE1YTAifQ.PKVjXYHdjBMum9cTgLzFeY2KIb9b2tjawJ0WXalsb8Bckw1RuxeiYKS1bw5Cc36_Rfmivze0T7r-Zy0PVj2omDLq65io0zkBzIEJRNGDn3gx_AqmBrJ3yGnz9s0WTMr2-F1TFPUByzbj1eSOASIKeI7DGufTA5LDrRclVkz32Oo"
         self.ccai = CCAI(client_id=self.client_id, api_key=self.api_key)
         
         # Sample account
         self.account = Account(
             first_name="John",
             last_name="Doe",
-            phone="+15551234567"
+            phone="+14156961732"
         )
         
         # Sample message and title
@@ -66,7 +67,7 @@ class TestSMS(unittest.TestCase):
                     {
                         "firstName": "John",
                         "lastName": "Doe",
-                        "phone": "+15551234567"
+                        "phone": "+14156961732"
                     }
                 ],
                 "message": self.message,
@@ -86,7 +87,7 @@ class TestSMS(unittest.TestCase):
             accounts=[{
                 "first_name": "John",
                 "last_name": "Doe",
-                "phone": "+15551234567"
+                "phone": "+14156961732"
             }],
             message=self.message,
             title=self.title
@@ -105,7 +106,7 @@ class TestSMS(unittest.TestCase):
                     {
                         "firstName": "John",
                         "lastName": "Doe",
-                        "phone": "+15551234567"
+                        "phone": "+14156961732"
                     }
                 ],
                 "message": self.message,
@@ -124,7 +125,7 @@ class TestSMS(unittest.TestCase):
         response = self.ccai.sms.send_single(
             first_name="Jane",
             last_name="Smith",
-            phone="+15559876543",
+            phone="+14156961732",
             message="Hi ${first_name}, thanks for your interest!",
             title="Single Message Test"
         )
@@ -142,7 +143,7 @@ class TestSMS(unittest.TestCase):
                     {
                         "firstName": "Jane",
                         "lastName": "Smith",
-                        "phone": "+15559876543"
+                        "phone": "+14156961732"
                     }
                 ],
                 "message": "Hi ${first_name}, thanks for your interest!",
@@ -197,7 +198,7 @@ class TestSMS(unittest.TestCase):
                     {
                         "firstName": "John",
                         "lastName": "Doe",
-                        "phone": "+15551234567"
+                        "phone": "+14156961732"
                     }
                 ],
                 "message": self.message,

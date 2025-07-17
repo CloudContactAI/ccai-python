@@ -58,3 +58,14 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Project specific
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.credentials
+*.key
+credentials.json
+secrets.json
+.env.local
