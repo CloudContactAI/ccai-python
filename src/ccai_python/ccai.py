@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 
 from .sms.sms import SMS
 from .sms.mms import MMS
+from .email_service import Email
+from .webhook import Webhook
 
 
 class Account(BaseModel):
@@ -61,6 +63,8 @@ class CCAI:
 
         self.sms = SMS(self)
         self.mms = MMS(self)
+        self.email = Email(self)
+        self.webhook = Webhook(self)
 
     @property
     def client_id(self) -> str:
@@ -82,6 +86,44 @@ class CCAI:
         timeout: int = 30
     ) -> Dict[str, Any]:
         url = f"{self.base_url}{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "*/*"
+        }
+
+        try:
+            response = requests.request(
+                method=method.upper(),
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=timeout
+            )
+            response.raise_for_status()
+            return cast(Dict[str, Any], response.json())
+        except requests.HTTPError as e:
+            if e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    error_message = str(error_data)
+                except (ValueError, TypeError):
+                    error_message = e.response.text or str(e)
+                raise APIError(e.response.status_code, error_message)
+            raise
+        except requests.RequestException as e:
+            raise APIError(0, f"Network error: {str(e)}")
+    
+    def custom_request(
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[Dict[str, Any]] = None,
+        base_url: Optional[str] = None,
+        timeout: int = 30
+    ) -> Dict[str, Any]:
+        """Make a custom request to a different base URL"""
+        url = f"{base_url or self.base_url}{endpoint}"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
