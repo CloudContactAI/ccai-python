@@ -68,4 +68,7 @@ Thumbs.db
 *.key
 credentials.json
 secrets.json
+.env
 .env.local
+.env.production
+.env.test

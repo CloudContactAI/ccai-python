@@ -2,17 +2,25 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import os
+from dotenv import load_dotenv
 from ccai_python import CCAI, Account
 
-ccai = CCAI(client_id="2682", api_key="eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJpbmZvQGFsbGNvZGUuY29tIiwiaXNzIjoiY2xvdWRjb250YWN0IiwibmJmIjoxNzE5NDQwMjM2LCJpYXQiOjE3MTk0NDAyMzYsInJvbGUiOiJVU0VSIiwiY2xpZW50SWQiOjI2ODIsImlkIjoyNzY0LCJ0eXBlIjoiQVBJX0tFWSIsImtleV9yYW5kb21faWQiOiI1MGRiOTUzZC1hMjUxLTRmZjMtODI5Yi01NjIyOGRhOGE1YTAifQ.PKVjXYHdjBMum9cTgLzFeY2KIb9b2tjawJ0WXalsb8Bckw1RuxeiYKS1bw5Cc36_Rfmivze0T7r-Zy0PVj2omDLq65io0zkBzIEJRNGDn3gx_AqmBrJ3yGnz9s0WTMr2-F1TFPUByzbj1eSOASIKeI7DGufTA5LDrRclVkz32Oo")
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
+ccai = CCAI(
+    client_id=os.getenv('CCAI_CLIENT_ID'),
+    api_key=os.getenv('CCAI_API_KEY')
+)
 
 # Test webhook by sending SMS (which will trigger webhook events)
 print("🚀 Sending test SMS to trigger webhook...")
 
 account = Account(
-    first_name="Test",
-    last_name="User", 
-    phone="+14156961732"
+    first_name=os.getenv('TEST_FIRST_NAME'),
+    last_name=os.getenv('TEST_LAST_NAME'),
+    phone=os.getenv('TEST_PHONE_NUMBER')
 )
 
 try:

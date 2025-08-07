@@ -58,7 +58,7 @@ class CCAI:
         self._config = CCAIConfig(
             client_id=client_id,
             api_key=api_key,
-            base_url=base_url or "https://core.cloudcontactai.com/api"
+            base_url=base_url or "https://core-test-cloudcontactai.allcode.com/api"
         )
 
         self.sms = SMS(self)
@@ -127,7 +127,9 @@ class CCAI:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "Accept": "*/*"
+            "Accept": "*/*",
+            "AccountId": str(self.client_id),
+            "ClientId": str(self.client_id)
         }
 
         try:

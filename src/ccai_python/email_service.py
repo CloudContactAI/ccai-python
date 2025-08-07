@@ -29,15 +29,24 @@ class EmailCampaign(BaseModel):
     sender_name: str = Field(..., description="Sender's name")
     accounts: List[EmailAccount] = Field(..., description="List of recipients")
     campaign_type: str = Field(default="EMAIL", description="Campaign type")
+    scheduled_timestamp: Optional[str] = Field(default=None, description="Scheduled delivery timestamp")
+    scheduled_timezone: Optional[str] = Field(default=None, description="Scheduled delivery timezone")
     add_to_list: str = Field(default="noList", description="List management option")
+    selected_list: Optional[Dict[str, Optional[str]]] = Field(default=None, description="Selected list")
+    list_id: Optional[str] = Field(default=None, description="List ID")
     contact_input: str = Field(default="accounts", description="Contact input type")
+    replace_contacts: Optional[bool] = Field(default=None, description="Replace contacts option")
+    email_template_id: Optional[str] = Field(default=None, description="Email template ID")
+    flux_id: Optional[str] = Field(default=None, description="Flux ID")
     from_type: str = Field(default="single", description="From type")
     senders: List[Any] = Field(default_factory=list, description="Senders list")
+    editor: Optional[str] = Field(default=None, description="Editor type")
+    file_key: Optional[str] = Field(default=None, description="File key")
 
 
 class EmailResponse(BaseModel):
     """Response from email API"""
-    id: Optional[str] = Field(default=None, description="Message ID")
+    id: Optional[int] = Field(default=None, description="Message ID")
     status: Optional[str] = Field(default=None, description="Status")
     campaign_id: Optional[str] = Field(default=None, description="Campaign ID")
     messages_sent: Optional[int] = Field(default=None, description="Number of messages sent")
@@ -59,7 +68,61 @@ class Email:
     
     def __init__(self, ccai):
         self.ccai = ccai
-        self.base_url = "https://email-campaigns.cloudcontactai.com/api/v1"
+        self.base_url = "https://email-campaigns-test-cloudcontactai.allcode.com/api/v1"
+    
+    def make_email_request(
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make an authenticated API request to the email campaigns API with required headers"""
+        url = f"{self.base_url}{endpoint}"
+        
+        # Print curl command for debugging (matching Node.js behavior)
+        curl_cmd = f"curl -X {method.upper()} \"{url}\" \\"
+        curl_cmd += f"\n  -H \"Authorization: Bearer {self.ccai.api_key}\" \\"
+        curl_cmd += f"\n  -H \"Content-Type: application/json\" \\"
+        curl_cmd += f"\n  -H \"Accept: */*\" \\"
+        curl_cmd += f"\n  -H \"clientId: {self.ccai.client_id}\" \\"
+        curl_cmd += f"\n  -H \"accountId: 1223\""
+        if data:
+            import json
+            curl_cmd += f" \\\n  -d '{json.dumps(data)}'"
+        
+        print("\n📡 Equivalent curl command:")
+        print(curl_cmd)
+        print("")
+        
+        headers = {
+            "Authorization": f"Bearer {self.ccai.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "*/*",
+            "clientId": str(self.ccai.client_id),
+            "accountId": "1223"
+        }
+        
+        try:
+            response = requests.request(
+                method=method.upper(),
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.HTTPError as e:
+            if e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    error_message = str(error_data)
+                except (ValueError, TypeError):
+                    error_message = e.response.text or str(e)
+                raise Exception(f"API Error: {e.response.status_code} - {error_message}")
+            raise
+        except requests.RequestException as e:
+            raise Exception(f"Network error: {str(e)}")
     
     def send_campaign(
         self,
@@ -90,11 +153,10 @@ class Email:
             if options and options.on_progress:
                 options.on_progress("Sending email campaign")
             
-            response = self.ccai.custom_request(
+            response = self.make_email_request(
                 "POST",
                 "/campaigns",
-                campaign.dict(),
-                self.base_url
+                campaign.dict()
             )
             
             if options and options.on_progress:

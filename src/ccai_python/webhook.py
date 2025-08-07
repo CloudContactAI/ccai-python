@@ -65,6 +65,25 @@ class Webhook:
     def __init__(self, ccai):
         self.ccai = ccai
     
+    def register(self, config: WebhookConfig) -> WebhookResponse:
+        """Register a new webhook endpoint"""
+        response = self.ccai.request('POST', '/webhooks', config.dict())
+        return WebhookResponse(**response)
+    
+    def update(self, webhook_id: str, config: Dict[str, Any]) -> WebhookResponse:
+        """Update an existing webhook configuration"""
+        response = self.ccai.request('PUT', f'/webhooks/{webhook_id}', config)
+        return WebhookResponse(**response)
+    
+    def list(self) -> List[WebhookResponse]:
+        """List all registered webhooks"""
+        response = self.ccai.request('GET', '/webhooks')
+        return [WebhookResponse(**webhook) for webhook in response]
+    
+    def delete(self, webhook_id: str) -> Dict[str, Any]:
+        """Delete a webhook"""
+        return self.ccai.request('DELETE', f'/webhooks/{webhook_id}')
+    
     def verify_signature(self, signature: str, body: str, secret: str) -> bool:
         """Verify a webhook signature"""
         # Placeholder for signature verification logic

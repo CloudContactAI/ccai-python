@@ -93,10 +93,152 @@ response = ccai.mms.send_with_image(
 print(f"MMS sent! Campaign ID: {response.campaign_id}")
 ```
 
+### Email
+
+```python
+from ccai_python import CCAI, EmailAccount, EmailCampaign
+from datetime import datetime, timedelta
+
+# Initialize the client
+ccai = CCAI(
+    client_id="YOUR-CLIENT-ID",
+    api_key="YOUR-API-KEY"
+)
+
+# Send a single email
+response = ccai.email.send_single(
+    first_name="John",
+    last_name="Doe",
+    email="john@example.com",
+    subject="Welcome to Our Service",
+    message="<p>Hello John,</p><p>Thank you for signing up!</p>",
+    sender_email="noreply@yourcompany.com",
+    reply_email="support@yourcompany.com",
+    sender_name="Your Company",
+    title="Welcome Email"
+)
+
+print(f"Email sent with ID: {response.id}")
+
+# Send email campaign to multiple recipients
+accounts = [
+    EmailAccount(
+        first_name="John",
+        last_name="Doe",
+        email="john@example.com",
+        phone=""
+    ),
+    EmailAccount(
+        first_name="Jane",
+        last_name="Smith",
+        email="jane@example.com",
+        phone=""
+    )
+]
+
+campaign = EmailCampaign(
+    subject="Monthly Newsletter",
+    title="July 2025 Newsletter",
+    message="<h1>Hello ${firstName}!</h1><p>Here's our monthly update...</p>",
+    sender_email="newsletter@yourcompany.com",
+    reply_email="support@yourcompany.com",
+    sender_name="Your Company Newsletter",
+    accounts=accounts
+)
+
+response = ccai.email.send_campaign(campaign)
+print(f"Email campaign sent: {response}")
+
+# Schedule an email for future delivery
+tomorrow = datetime.now() + timedelta(days=1)
+tomorrow = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
+
+scheduled_campaign = EmailCampaign(
+    subject="Scheduled Email",
+    title="Future Email",
+    message="<p>This email was scheduled in advance!</p>",
+    sender_email="scheduled@yourcompany.com",
+    reply_email="support@yourcompany.com",
+    sender_name="Your Company",
+    accounts=[accounts[0]],
+    scheduled_timestamp=tomorrow.isoformat(),
+    scheduled_timezone="America/New_York"
+)
+
+response = ccai.email.send_campaign(scheduled_campaign)
+print(f"Email scheduled: {response}")
+```
+
+### Webhooks
+
+```python
+from ccai_python import CCAI, WebhookConfig, WebhookEventType
+
+# Initialize the client
+ccai = CCAI(
+    client_id="YOUR-CLIENT-ID",
+    api_key="YOUR-API-KEY"
+)
+
+# Register a webhook
+config = WebhookConfig(
+    url="https://your-domain.com/api/ccai-webhook",
+    events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED],
+    secret="your-webhook-secret"
+)
+
+webhook = ccai.webhook.register(config)
+print(f"Webhook registered with ID: {webhook.id}")
+
+# List all webhooks
+webhooks = ccai.webhook.list()
+print(f"Found {len(webhooks)} webhooks")
+
+# Update a webhook
+update_data = {
+    "events": [WebhookEventType.MESSAGE_RECEIVED]
+}
+updated_webhook = ccai.webhook.update(webhook.id, update_data)
+print(f"Webhook updated: {updated_webhook}")
+
+# Delete a webhook
+result = ccai.webhook.delete(webhook.id)
+print(f"Webhook deleted: {result}")
+
+# Create a webhook handler for web frameworks
+def handle_message_sent(event):
+    print(f"Message sent: {event.message} to {event.to}")
+
+def handle_message_received(event):
+    print(f"Message received: {event.message} from {event.from_}")
+
+handlers = {
+    'on_message_sent': handle_message_sent,
+    'on_message_received': handle_message_received
+}
+
+webhook_handler = ccai.webhook.create_handler(handlers)
+
+# Use with Flask
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/api/ccai-webhook', methods=['POST'])
+def handle_webhook():
+    payload = request.get_json()
+    result = webhook_handler(payload)
+    return jsonify(result)
+```
+
 ## Features
 
 - Send SMS messages to single or multiple recipients
 - Send MMS messages with images
+- Send Email campaigns with HTML content
+- Schedule emails for future delivery
+- Webhook management (register, update, list, delete)
+- Webhook event handling for web frameworks
 - Upload images to S3 with signed URLs
 - Variable substitution in messages
 - Progress tracking callbacks
