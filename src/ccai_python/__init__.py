@@ -10,6 +10,7 @@ from .sms.sms import SMS, SMSCampaign, SMSResponse, SMSOptions
 from .sms.mms import MMS
 from .email_service import Email, EmailAccount, EmailCampaign, EmailResponse, EmailOptions
 from .webhook import Webhook, WebhookConfig, WebhookEventType, MessageSentEvent, MessageReceivedEvent
+from .contact_service import Contact, ContactDoNotTextRequest, ContactDoNotTextResponse
 
 __all__ = [
     'CCAI',
@@ -29,7 +30,10 @@ __all__ = [
     'WebhookConfig',
     'WebhookEventType',
     'MessageSentEvent',
-    'MessageReceivedEvent'
+    'MessageReceivedEvent',
+    'Contact',
+    'ContactDoNotTextRequest',
+    'ContactDoNotTextResponse'
 ]
 
 __version__ = '1.0.0'

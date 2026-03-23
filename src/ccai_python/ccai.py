@@ -14,6 +14,7 @@ from .sms.sms import SMS
 from .sms.mms import MMS
 from .email_service import Email
 from .webhook import Webhook
+from .contact_service import Contact
 
 
 class Account(BaseModel):
@@ -65,6 +66,7 @@ class CCAI:
         self.mms = MMS(self)
         self.email = Email(self)
         self.webhook = Webhook(self)
+        self.contact = Contact(self)
 
     @property
     def client_id(self) -> str:
