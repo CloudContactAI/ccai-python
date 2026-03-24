@@ -32,6 +32,10 @@ class CCAIConfig(BaseModel):
         default="https://core.cloudcontactai.com/api",
         description="Base URL for the API"
     )
+    file_base_url: str = Field(
+        default="https://files.cloudcontactai.com",
+        description="Base URL for File processor API"
+    )
 
 
 class APIError(Exception):
@@ -49,17 +53,26 @@ class CCAI:
         self,
         client_id: str,
         api_key: str,
-        base_url: Optional[str] = None
+        base_url: Optional[str] = None,
+        use_test: bool = False
     ) -> None:
         if not client_id:
             raise ValueError("Client ID is required")
         if not api_key:
             raise ValueError("API Key is required")
 
+        if use_test:
+            default_base_url = "https://core-test-cloudcontactai.allcode.com/api"
+            file_base_url = "https://files-test-cloudcontactai.allcode.com"
+        else:
+            default_base_url = "https://core.cloudcontactai.com/api"
+            file_base_url = "https://files.cloudcontactai.com"
+
         self._config = CCAIConfig(
             client_id=client_id,
             api_key=api_key,
-            base_url=base_url or "https://core-test-cloudcontactai.allcode.com/api"
+            base_url=base_url or default_base_url,
+            file_base_url=file_base_url
         )
 
         self.sms = SMS(self)
@@ -79,6 +92,10 @@ class CCAI:
     @property
     def base_url(self) -> str:
         return self._config.base_url
+
+    @property
+    def file_base_url(self) -> str:
+        return self._config.file_base_url
 
     def request(
         self,

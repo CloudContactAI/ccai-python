@@ -7,7 +7,8 @@ load_dotenv()
 
 ccai = CCAI(
     client_id=os.getenv('CCAI_CLIENT_ID'),
-    api_key=os.getenv('CCAI_API_KEY')
+    api_key=os.getenv('CCAI_API_KEY'),
+    use_test=True
 )
 
 account = Account(
