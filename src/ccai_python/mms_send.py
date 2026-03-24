@@ -7,7 +7,8 @@ load_dotenv()
 
 ccai = CCAI(
     client_id=os.getenv('CCAI_CLIENT_ID'),
-    api_key=os.getenv('CCAI_API_KEY')
+    api_key=os.getenv('CCAI_API_KEY'),
+    use_test=True
 )
 
 account = Account(
@@ -21,7 +22,8 @@ response = ccai.mms.send_with_image(
     content_type="image/jpeg",
     accounts=[account],
     message="Live test MMS from script with image!",
-    title="CLI MMS Test"
+    title="CLI Python MMS Test",
+    force_new_campaign=False
 )
 
 print("✅ MMS Sent!")

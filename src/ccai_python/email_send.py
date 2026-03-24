@@ -10,7 +10,8 @@ from ccai_python import CCAI, EmailAccount
 
 ccai = CCAI(
     client_id=os.getenv('CCAI_CLIENT_ID'),
-    api_key=os.getenv('CCAI_API_KEY')
+    api_key=os.getenv('CCAI_API_KEY'),
+    use_test=True
 )
 
 response = ccai.email.send_single(

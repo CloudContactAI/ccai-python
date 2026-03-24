@@ -7,11 +7,17 @@ Handles sending MMS messages through the Cloud Contact AI platform.
 """
 
 import os
-from typing import Any, Callable, Dict, List, Optional, Protocol, TypedDict, Union, cast
+import hashlib
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Protocol, Union
 import requests
-from pydantic import BaseModel, Field
 
 from .sms import Account, SMSOptions, SMSResponse
+
+
+@dataclass
+class StoredUrlResponse:
+    url: str
 
 
 class CCAIProtocol(Protocol):
@@ -26,6 +32,10 @@ class CCAIProtocol(Protocol):
     
     @property
     def base_url(self) -> str:
+        ...
+
+    @property
+    def file_base_url(self) -> str:
         ...
     
     def request(
@@ -52,6 +62,26 @@ class MMS:
         """
         self._ccai = ccai
         self._http_client = requests.Session()
+    
+    @staticmethod
+    def md5(file_path: str) -> str:
+        digest = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    
+    def check_file_uploaded(self, file_key: str) -> StoredUrlResponse:
+        try:
+            response = self._ccai.request(
+                method="GET",
+                endpoint=f"/clients/{self._ccai.client_id}/storedUrl?fileKey={file_key}"
+            )
+            return StoredUrlResponse(url=response.get("storedUrl", ""))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return StoredUrlResponse(url="")
     
     def get_signed_upload_url(
         self,
@@ -97,7 +127,7 @@ class MMS:
         
         try:
             response = self._http_client.post(
-                "https://files.cloudcontactai.com/upload/url",
+                f"{self._ccai.file_base_url}/upload/url",
                 headers={
                     "Authorization": f"Bearer {self._ccai.api_key}",
                     "Content-Type": "application/json"
@@ -367,16 +397,33 @@ class MMS:
         """
         # Create options if not provided
         options = options or SMSOptions()
-        
-        # Step 1: Get the file name from the path
+
+        # Step 1: Get the file name, extension and md5 from the path
+        md5_image = self.md5(image_path)
         file_name = os.path.basename(image_path)
+        file_extension = os.path.splitext(file_name)[1]
+        md5_name = f"{md5_image}{file_extension}"
+
+        # Check if the same image has already been uploaded
+        file_key = f"{self._ccai.client_id}/campaign/{md5_name}"
+        stored_url_response = self.check_file_uploaded(file_key)
+
+        if stored_url_response.url:
+            return self.send(
+                picture_file_key=file_key,
+                accounts=accounts,
+                message=message,
+                title=title,
+                options=options,
+                force_new_campaign=force_new_campaign
+            )
         
         # Notify progress if callback provided
         if options.on_progress:
             options.on_progress("Getting signed upload URL")
         
         # Step 2: Get a signed URL for uploading
-        upload_response = self.get_signed_upload_url(file_name, content_type)
+        upload_response = self.get_signed_upload_url(md5_name, content_type)
         signed_url = upload_response["signedS3Url"]
         file_key = upload_response["fileKey"]
         

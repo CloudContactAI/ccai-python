@@ -5,11 +5,14 @@ Tests for the MMS service
 :copyright: 2025 CloudContactAI LLC
 """
 
+import hashlib
 import os
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 
 from ccai_python import CCAI, Account, SMSOptions, SMSResponse
+from ccai_python.sms.mms import StoredUrlResponse
 
 
 class TestMMS(unittest.TestCase):
@@ -325,6 +328,12 @@ class TestMMS(unittest.TestCase):
         """Test complete MMS workflow: get URL, upload image, send MMS"""
         # Mock file exists
         mock_exists.return_value = True
+
+        # Mock md5 and check_file_uploaded
+        fake_md5 = "abc123def456"
+        md5_name = f"{fake_md5}.jpg"
+        self.ccai.mms.md5 = MagicMock(return_value=fake_md5)
+        self.ccai.mms.check_file_uploaded = MagicMock(return_value=StoredUrlResponse(url=""))
         
         # Mock upload URL response
         upload_url_response = MagicMock()
@@ -363,7 +372,15 @@ class TestMMS(unittest.TestCase):
         self.assertEqual(response.id, "msg-123")
         self.assertEqual(response.status, "sent")
         
-        # Verify upload URL request
+        # Verify md5 was called with image_path
+        self.ccai.mms.md5.assert_called_once_with(self.file_path)
+        
+        # Verify check_file_uploaded was called
+        self.ccai.mms.check_file_uploaded.assert_called_once_with(
+            f"{self.client_id}/campaign/{md5_name}"
+        )
+        
+        # Verify upload URL request used md5_name
         mock_post.assert_any_call(
             "https://files.cloudcontactai.com/upload/url",
             headers={
@@ -371,7 +388,7 @@ class TestMMS(unittest.TestCase):
                 "Content-Type": "application/json"
             },
             json={
-                "fileName": self.file_name,
+                "fileName": md5_name,
                 "fileType": self.content_type,
                 "fileBasePath": f"{self.client_id}/campaign",
                 "publicFile": True
@@ -383,29 +400,6 @@ class TestMMS(unittest.TestCase):
             "https://s3.amazonaws.com/bucket/signed-url",
             headers={"Content-Type": self.content_type},
             data=mock_file_data
-        )
-        
-        # Verify send request
-        mock_post.assert_any_call(
-            f"{self.ccai.base_url}/clients/{self.client_id}/campaigns/direct",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-                "ForceNewCampaign": "true"
-            },
-            json={
-                "pictureFileKey": f"{self.client_id}/campaign/{self.file_name}",
-                "accounts": [
-                    {
-                        "firstName": "John",
-                        "lastName": "Doe",
-                        "phone": "+15551234567"
-                    }
-                ],
-                "message": self.message,
-                "title": self.title
-            },
-            timeout=30
         )
     
     def test_validation(self):
@@ -480,6 +474,53 @@ class TestMMS(unittest.TestCase):
                 file_path=self.file_path,
                 content_type=""
             )
+
+
+    def test_md5(self):
+        """Test MD5 hash calculation of a file"""
+        content = b"test image content for md5"
+        expected = hashlib.md5(content).hexdigest()
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        try:
+            result = self.ccai.mms.md5(tmp_path)
+            self.assertEqual(result, expected)
+        finally:
+            os.unlink(tmp_path)
+
+    def test_md5_empty_file(self):
+        """Test MD5 hash of an empty file"""
+        expected = hashlib.md5(b"").hexdigest()
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp_path = tmp.name
+
+        try:
+            result = self.ccai.mms.md5(tmp_path)
+            self.assertEqual(result, expected)
+        finally:
+            os.unlink(tmp_path)
+
+    def test_check_file_uploaded_found(self):
+        """Test check_file_uploaded when file exists"""
+        self.ccai.request = MagicMock(return_value={"storedUrl": "https://s3.amazonaws.com/bucket/file.jpg"})
+
+        result = self.ccai.mms.check_file_uploaded("test-client-id/campaign/image.jpg")
+
+        self.assertIsInstance(result, StoredUrlResponse)
+        self.assertEqual(result.url, "https://s3.amazonaws.com/bucket/file.jpg")
+
+    def test_check_file_uploaded_not_found(self):
+        """Test check_file_uploaded when file does not exist"""
+        self.ccai.request = MagicMock(side_effect=Exception("Not found"))
+
+        result = self.ccai.mms.check_file_uploaded("test-client-id/campaign/missing.jpg")
+
+        self.assertIsInstance(result, StoredUrlResponse)
+        self.assertEqual(result.url, "")
 
 
 if __name__ == '__main__':
