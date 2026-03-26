@@ -1,5 +1,7 @@
 # CCAI Python Client
 
+Version: 1.0.1
+
 A Python client for interacting with the CloudContactAI API.
 
 ## Installation
@@ -167,6 +169,39 @@ scheduled_campaign = EmailCampaign(
 
 response = ccai.email.send_campaign(scheduled_campaign)
 print(f"Email scheduled: {response}")
+```
+
+### Contacts
+
+```python
+from ccai_python import CCAI
+
+# Initialize the client
+ccai = CCAI(
+    client_id="YOUR-CLIENT-ID",
+    api_key="YOUR-API-KEY"
+)
+
+# Set do not text status using contact ID
+response = ccai.contact.set_do_not_text(
+    do_not_text=True,
+    contact_id="your-contact-id"
+)
+print(f"Contact {response.contact_id} do not text set to {response.do_not_text}")
+
+# Set do not text status using phone number
+response = ccai.contact.set_do_not_text(
+    do_not_text=True,
+    phone="+15551234567"
+)
+print(f"Contact {response.contact_id} ({response.phone}) do not text set to {response.do_not_text}")
+
+# Remove do not text status from a contact
+response = ccai.contact.set_do_not_text(
+    do_not_text=False,
+    contact_id="your-contact-id"
+)
+print(f"Contact {response.contact_id} do not text removed: {response.do_not_text}")
 ```
 
 ### Webhooks
