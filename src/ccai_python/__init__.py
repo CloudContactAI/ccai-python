@@ -9,7 +9,7 @@ from .ccai import CCAI, Account, CCAIConfig
 from .sms.sms import SMS, SMSCampaign, SMSResponse, SMSOptions
 from .sms.mms import MMS
 from .email_service import Email, EmailAccount, EmailCampaign, EmailResponse, EmailOptions
-from .webhook import Webhook, WebhookConfig, WebhookEventType, MessageSentEvent, MessageReceivedEvent
+from .webhook import Webhook, WebhookConfig, WebhookEventType, WebhookEvent
 from .contact_service import Contact, ContactDoNotTextRequest, ContactDoNotTextResponse
 
 __all__ = [
@@ -29,8 +29,7 @@ __all__ = [
     'EmailOptions',
     'WebhookConfig',
     'WebhookEventType',
-    'MessageSentEvent',
-    'MessageReceivedEvent',
+    'WebhookEvent',
     'Contact',
     'ContactDoNotTextRequest',
     'ContactDoNotTextResponse'

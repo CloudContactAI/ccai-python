@@ -523,5 +523,30 @@ class TestMMS(unittest.TestCase):
         self.assertEqual(result.url, "")
 
 
+    @patch('requests.Session.post')
+    def test_send_maps_data_and_message_data(self, mock_post):
+        """Test that data and message_data are mapped to wire format data/messageData"""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "mms-123", "status": "sent"}
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        account = Account(
+            first_name="John",
+            last_name="Doe",
+            phone="+15551234567",
+            data={"city": "Miami", "plan": "premium"},
+            message_data='{"source":"mms-test"}'
+        )
+
+        self.ccai.mms.send("file-key", [account], "Hello from ${city}!", "Test")
+
+        call_json = mock_post.call_args.kwargs.get("json") or mock_post.call_args[1].get("json")
+        sent_account = call_json["accounts"][0]
+        self.assertEqual(sent_account["data"], {"city": "Miami", "plan": "premium"})
+        self.assertEqual(sent_account["messageData"], '{"source":"mms-test"}')
+        self.assertNotIn("message_data", sent_account)
+
+
 if __name__ == '__main__':
     unittest.main()

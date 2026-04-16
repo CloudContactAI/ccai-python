@@ -73,7 +73,7 @@ class TestSMS(unittest.TestCase):
                 "message": self.message,
                 "title": self.title
             },
-            timeout=None
+            timeout=30
         )
     
     @patch.object(CCAI, 'request')
@@ -112,7 +112,7 @@ class TestSMS(unittest.TestCase):
                 "message": self.message,
                 "title": self.title
             },
-            timeout=None
+            timeout=30
         )
     
     @patch.object(CCAI, 'request')
@@ -149,7 +149,7 @@ class TestSMS(unittest.TestCase):
                 "message": "Hi ${first_name}, thanks for your interest!",
                 "title": "Single Message Test"
             },
-            timeout=None
+            timeout=30
         )
     
     @patch.object(CCAI, 'request')
@@ -207,6 +207,61 @@ class TestSMS(unittest.TestCase):
             timeout=60
         )
     
+    @patch.object(CCAI, 'request')
+    def test_send_with_data_and_message_data(self, mock_request):
+        """Test that data and messageData are included in the request payload"""
+        mock_request.return_value = {
+            "id": "msg-cf-123",
+            "status": "sent",
+            "message": "SMS sent successfully",
+            "responseId": "resp-abc-456",
+        }
+
+        account = Account(
+            first_name="John",
+            last_name="Doe",
+            phone="+14156961732",
+            data={"city": "Miami", "country": "USA", "plan": "premium"},
+            message_data='{"source":"python-sdk-test"}',
+        )
+
+        response = self.ccai.sms.send(
+            accounts=[account],
+            message="Hello ${firstName} from ${city}!",
+            title="Test data fields"
+        )
+
+        # Verify payload contains "data" and "messageData" keys (wire format)
+        call_args = mock_request.call_args
+        payload = call_args.kwargs.get("data") or call_args[1].get("data")
+        sent_account = payload["accounts"][0]
+        self.assertEqual(sent_account["data"], {"city": "Miami", "country": "USA", "plan": "premium"})
+        self.assertEqual(sent_account["messageData"], '{"source":"python-sdk-test"}')
+        self.assertNotIn("message_data", sent_account)
+
+        # Verify response fields
+        self.assertEqual(response.message, "SMS sent successfully")
+        self.assertEqual(response.response_id, "resp-abc-456")
+
+    @patch.object(CCAI, 'request')
+    def test_response_message_and_response_id(self, mock_request):
+        """Test that message and response_id are returned from API response"""
+        mock_request.return_value = {
+            "id": "msg-123",
+            "status": "sent",
+            "message": "SMS sent successfully",
+            "responseId": "resp-id-xyz",
+        }
+
+        response = self.ccai.sms.send(
+            accounts=[self.account],
+            message=self.message,
+            title=self.title
+        )
+
+        self.assertEqual(response.message, "SMS sent successfully")
+        self.assertEqual(response.response_id, "resp-id-xyz")
+
     def test_validation(self):
         """Test input validation"""
         # Test empty accounts

@@ -72,3 +72,7 @@ secrets.json
 .env.local
 .env.production
 .env.test
+
+# Real API tests — local only
+src/test_real.py
+test_real.py

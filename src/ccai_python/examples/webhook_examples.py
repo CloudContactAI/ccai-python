@@ -19,16 +19,29 @@ ccai = CCAI(
 )
 
 def register_webhook_example():
-    """Example: Register a new webhook"""
+    """Example: Register a new webhook with auto-generated secret"""
     try:
+        # Example 1: Auto-generated secret (server will generate and return it)
         config = WebhookConfig(
             url="https://your-domain.com/api/ccai-webhook",
-            events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED],
-            secret="your-webhook-secret"
+            events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED]
+            # secret not provided - server will auto-generate
         )
-        
+
         response = ccai.webhook.register(config)
-        print("Webhook registered successfully:", response)
+        print("Webhook registered successfully with auto-generated secret:", response)
+        print(f"Auto-generated Secret Key: {getattr(response, 'secretKey', 'N/A')}")
+
+        # Example 2: Custom secret
+        config_custom = WebhookConfig(
+            url="https://your-domain.com/api/ccai-webhook-v2",
+            events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED],
+            secret="my-custom-secret-key"
+        )
+
+        response_custom = ccai.webhook.register(config_custom)
+        print("Webhook registered with custom secret:", response_custom)
+
         return response.id
     except Exception as error:
         print("Error registering webhook:", error)
