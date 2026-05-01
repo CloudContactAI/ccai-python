@@ -15,6 +15,16 @@ class Account(BaseModel):
     first_name: str = Field(..., description="Recipient's first name")
     last_name: str = Field(..., description="Recipient's last name")
     phone: str = Field(..., description="Recipient's phone number in E.164 format")
+    data: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Additional key-value pairs for variable substitution in message templates. "
+                    "Use ${key} in your message. Sent to the API as 'data'."
+    )
+    message_data: Optional[str] = Field(
+        default=None,
+        description="Arbitrary string forwarded as-is to your webhook handler. "
+                    "Not used in the message body. Sent to the API as 'messageData'."
+    )
 
 
 class SMSCampaign(BaseModel):
@@ -31,11 +41,20 @@ class SMSResponse(BaseModel):
     campaign_id: Optional[str] = Field(None, description="Campaign ID")
     messages_sent: Optional[int] = Field(None, description="Number of messages sent")
     timestamp: Optional[str] = Field(None, description="Timestamp of the operation")
+    message: Optional[str] = Field(None, description="Human-readable message from the API")
+    response_id: Optional[str] = Field(None, description="Unique response identifier")
 
     @model_validator(mode="before")
-    def coerce_id(cls, values):
+    def normalize_fields(cls, values):
         if "id" in values and isinstance(values["id"], int):
             values["id"] = str(values["id"])
+        # Handle camelCase keys from real API responses
+        if "campaignId" in values and "campaign_id" not in values:
+            values["campaign_id"] = values.pop("campaignId")
+        if "messagesSent" in values and "messages_sent" not in values:
+            values["messages_sent"] = values.pop("messagesSent")
+        if "responseId" in values and "response_id" not in values:
+            values["response_id"] = values.pop("responseId")
         return values
 
     model_config = {
@@ -45,11 +64,11 @@ class SMSResponse(BaseModel):
 
 class SMSOptions(BaseModel):
     """Options for SMS operations"""
-    timeout: Optional[int] = Field(None, description="Request timeout in seconds")
-    retries: Optional[int] = Field(None, description="Number of retry attempts")
-    on_progress: Optional[Callable[[str], None]] = Field(
-        None, description="Callback for tracking progress"
-    )
+    model_config = {"arbitrary_types_allowed": True}
+
+    timeout: Optional[int] = Field(default=None, description="Request timeout in seconds")
+    retries: Optional[int] = Field(default=None, description="Number of retry attempts")
+    on_progress: Optional[Callable[[str], None]] = Field(default=None, description="Callback for tracking progress")
 
 
 class CCAIProtocol(Protocol):
@@ -62,9 +81,9 @@ class CCAIProtocol(Protocol):
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
-    ) -> Dict[str, Any]:
+        data: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        timeout: int = 30
+    ) -> Any:
         ...
 
 
@@ -79,6 +98,7 @@ class SMS:
         accounts: List[Union[Account, Dict[str, str]]],
         message: str,
         title: str,
+        sender_phone: Optional[str] = None,
         options: Optional[SMSOptions] = None
     ) -> SMSResponse:
         if not accounts:
@@ -111,25 +131,32 @@ class SMS:
             options.on_progress("Preparing to send SMS")
 
         endpoint = f"/clients/{self._ccai.client_id}/campaigns/direct"
-        accounts_data = [
-            {
+        accounts_data = []
+        for acct in normalized_accounts:
+            account_dict: Dict[str, Any] = {
                 "firstName": acct.first_name,
                 "lastName": acct.last_name,
-                "phone": acct.phone
-            } for acct in normalized_accounts
-        ]
+                "phone": acct.phone,
+            }
+            if acct.data:
+                account_dict["data"] = acct.data
+            if acct.message_data:
+                account_dict["messageData"] = acct.message_data
+            accounts_data.append(account_dict)
 
-        payload = {
+        payload: Dict[str, Any] = {
             "accounts": accounts_data,
             "message": message,
             "title": title
         }
+        if sender_phone:
+            payload["senderPhone"] = sender_phone
 
         try:
             if options and options.on_progress:
                 options.on_progress("Sending SMS")
 
-            timeout = options.timeout if options else None
+            timeout = (options.timeout if options and options.timeout else None) or 30
             response_data = self._ccai.request(
                 method="post",
                 endpoint=endpoint,
@@ -154,12 +181,15 @@ class SMS:
         phone: str,
         message: str,
         title: str,
+        custom_data: Optional[str] = None,
+        sender_phone: Optional[str] = None,
         options: Optional[SMSOptions] = None
     ) -> SMSResponse:
         account = Account(
             first_name=first_name,
             last_name=last_name,
-            phone=phone
+            phone=phone,
+            message_data=custom_data
         )
-        return self.send([account], message, title, options)
+        return self.send([account], message, title, sender_phone, options)
 

@@ -39,12 +39,12 @@ class CCAIProtocol(Protocol):
         ...
     
     def request(
-        self, 
-        method: str, 
-        endpoint: str, 
-        data: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        timeout: int = 30
+    ) -> Any:
         ...
 
 
@@ -201,6 +201,7 @@ class MMS:
         accounts: List[Union[Account, Dict[str, str]]],
         message: str,
         title: str,
+        sender_phone: Optional[str] = None,
         options: Optional[SMSOptions] = None,
         force_new_campaign: bool = True
     ) -> SMSResponse:
@@ -270,14 +271,18 @@ class MMS:
         endpoint = f"/clients/{self._ccai.client_id}/campaigns/direct"
         
         # Convert Account objects to dictionaries with camelCase keys for API compatibility
-        accounts_data = [
-            {
+        accounts_data = []
+        for account in normalized_accounts:
+            acc: Dict[str, Any] = {
                 "firstName": account.first_name,
                 "lastName": account.last_name,
-                "phone": account.phone
+                "phone": account.phone,
             }
-            for account in normalized_accounts
-        ]
+            if account.data:
+                acc["data"] = account.data
+            if account.message_data:
+                acc["messageData"] = account.message_data
+            accounts_data.append(acc)
         
         campaign_data = {
             "pictureFileKey": picture_file_key,
@@ -285,6 +290,8 @@ class MMS:
             "message": message,
             "title": title
         }
+        if sender_phone:
+            campaign_data["senderPhone"] = sender_phone
         
         try:
             # Notify progress if callback provided
@@ -332,6 +339,8 @@ class MMS:
         phone: str,
         message: str,
         title: str,
+        custom_data: Optional[str] = None,
+        sender_phone: Optional[str] = None,
         options: Optional[SMSOptions] = None,
         force_new_campaign: bool = True
     ) -> SMSResponse:
@@ -345,6 +354,8 @@ class MMS:
             phone: Recipient's phone number (E.164 format)
             message: Message content (can include ${first_name} and ${last_name} variables)
             title: Campaign title
+            custom_data: Optional arbitrary string forwarded to your webhook handler (sent as messageData)
+            sender_phone: Optional sender phone number
             options: Optional settings for the MMS send operation
             force_new_campaign: Whether to force a new campaign (default: True)
             
@@ -354,7 +365,8 @@ class MMS:
         account = Account(
             first_name=first_name,
             last_name=last_name,
-            phone=phone
+            phone=phone,
+            message_data=custom_data
         )
         
         return self.send(
@@ -362,6 +374,7 @@ class MMS:
             accounts=[account],
             message=message,
             title=title,
+            sender_phone=sender_phone,
             options=options,
             force_new_campaign=force_new_campaign
         )
@@ -373,6 +386,7 @@ class MMS:
         accounts: List[Union[Account, Dict[str, str]]],
         message: str,
         title: str,
+        sender_phone: Optional[str] = None,
         options: Optional[SMSOptions] = None,
         force_new_campaign: bool = True
     ) -> SMSResponse:
@@ -414,6 +428,7 @@ class MMS:
                 accounts=accounts,
                 message=message,
                 title=title,
+                sender_phone=sender_phone,
                 options=options,
                 force_new_campaign=force_new_campaign
             )
@@ -447,6 +462,7 @@ class MMS:
             accounts=accounts,
             message=message,
             title=title,
+            sender_phone=sender_phone,
             options=options,
             force_new_campaign=force_new_campaign
         )

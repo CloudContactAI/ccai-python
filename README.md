@@ -215,30 +215,48 @@ ccai = CCAI(
     api_key="YOUR-API-KEY"
 )
 
-# Register a webhook
+# Example 1: Register a webhook with auto-generated secret
+# If secret is not provided, the server will auto-generate one
 config = WebhookConfig(
     url="https://your-domain.com/api/ccai-webhook",
-    events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED],
-    secret="your-webhook-secret"
+    events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED]
+    # secret not provided - server will auto-generate and return it
 )
 
 webhook = ccai.webhook.register(config)
 print(f"Webhook registered with ID: {webhook.id}")
+print(f"Auto-generated Secret: {webhook.secretKey}")
+
+# Example 2: Register a webhook with a custom secret
+config_custom = WebhookConfig(
+    url="https://your-domain.com/api/ccai-webhook-v2",
+    events=[WebhookEventType.MESSAGE_SENT, WebhookEventType.MESSAGE_RECEIVED],
+    secret="your-custom-secret-key"
+)
+
+webhook_custom = ccai.webhook.register(config_custom)
+print(f"Webhook with custom secret registered: {webhook_custom.id}")
 
 # List all webhooks
 webhooks = ccai.webhook.list()
 print(f"Found {len(webhooks)} webhooks")
 
 # Update a webhook
-update_data = {
-    "events": [WebhookEventType.MESSAGE_RECEIVED]
-}
-updated_webhook = ccai.webhook.update(webhook.id, update_data)
-print(f"Webhook updated: {updated_webhook}")
+updated_webhook = ccai.webhook.update(webhook.id, {
+    "url": "https://your-domain.com/api/ccai-webhook-v3"
+})
+print(f"Webhook updated: {updated_webhook.url}")
 
 # Delete a webhook
 result = ccai.webhook.delete(webhook.id)
 print(f"Webhook deleted: {result}")
+
+# Verify webhook signature in your handler
+def verify_and_handle_webhook(signature, client_id, event_hash, secret):
+    if ccai.webhook.verify_signature(signature, client_id, event_hash, secret):
+        print(f"Valid webhook signature verified")
+    else:
+        print("Invalid signature")
 
 # Create a webhook handler for web frameworks
 def handle_message_sent(event):
@@ -256,12 +274,26 @@ webhook_handler = ccai.webhook.create_handler(handlers)
 
 # Use with Flask
 from flask import Flask, request, jsonify
+import json
 
 app = Flask(__name__)
 
 @app.route('/api/ccai-webhook', methods=['POST'])
 def handle_webhook():
-    payload = request.get_json()
+    signature = request.headers.get('X-CCAI-Signature', '')
+    body = request.get_data(as_text=True)
+    secret = 'your-webhook-secret-key'  # Use the secret from webhook registration
+    
+    # Parse payload to get client_id and event_hash
+    payload = json.loads(body)
+    client_id = os.getenv('CCAI_CLIENT_ID')
+    event_hash = payload.get('eventHash', '')
+    
+    # Verify signature
+    if not ccai.webhook.verify_signature(signature, client_id, event_hash, secret):
+        return jsonify({"error": "Invalid signature"}), 401
+    
+    # Process webhook
     result = webhook_handler(payload)
     return jsonify(result)
 ```

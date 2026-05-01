@@ -9,8 +9,8 @@ from ccai_python import CCAI
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 ccai = CCAI(
-    client_id=os.getenv('CCAI_CLIENT_ID'),
-    api_key=os.getenv('CCAI_API_KEY')
+    client_id=os.environ['CCAI_CLIENT_ID'] ,
+    api_key=os.environ['CCAI_API_KEY'] 
 )
 
 # Test set_do_not_text with phone number
