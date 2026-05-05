@@ -16,6 +16,8 @@ from .sms.mms import MMS
 from .email_service import Email
 from .webhook import Webhook
 from .contact_service import Contact
+from .brand_service import Brand
+from .campaign_service import Campaign as CampaignService
 
 
 class CCAIConfig(BaseModel):
@@ -55,11 +57,13 @@ class CCAI:
     PROD_BASE_URL = "https://core.cloudcontactai.com/api"
     PROD_EMAIL_URL = "https://email-campaigns.cloudcontactai.com/api/v1"
     PROD_FILES_URL = "https://files.cloudcontactai.com"
+    PROD_COMPLIANCE_URL = "https://compliance.cloudcontactai.com/api"
 
     # Test environment URLs
     TEST_BASE_URL = "https://core-test-cloudcontactai.allcode.com/api"
     TEST_EMAIL_URL = "https://email-campaigns-test-cloudcontactai.allcode.com/api/v1"
     TEST_FILES_URL = "https://files-test-cloudcontactai.allcode.com"
+    TEST_COMPLIANCE_URL = "https://compliance-test-cloudcontactai.allcode.com/api"
 
     def __init__(
         self,
@@ -68,6 +72,7 @@ class CCAI:
         base_url: Optional[str] = None,
         email_base_url: Optional[str] = None,
         file_base_url: Optional[str] = None,
+        compliance_base_url: Optional[str] = None,
         use_test: bool = False
     ) -> None:
         if not client_id:
@@ -85,6 +90,9 @@ class CCAI:
         resolved_files = self._resolve_url(
             file_base_url, "CCAI_FILES_BASE_URL", self.PROD_FILES_URL, self.TEST_FILES_URL, use_test
         )
+        self._compliance_base_url = self._resolve_url(
+            compliance_base_url, "CCAI_COMPLIANCE_BASE_URL", self.PROD_COMPLIANCE_URL, self.TEST_COMPLIANCE_URL, use_test
+        )
 
         self._config = CCAIConfig(
             client_id=client_id,
@@ -100,6 +108,8 @@ class CCAI:
         self.email = Email(self)
         self.webhook = Webhook(self)
         self.contact = Contact(self)
+        self.brands = Brand(self)
+        self.campaigns = CampaignService(self)
 
     def _resolve_url(
         self,
@@ -138,6 +148,10 @@ class CCAI:
         return self._config.file_base_url
 
     @property
+    def compliance_base_url(self) -> str:
+        return self._compliance_base_url
+
+    @property
     def use_test(self) -> bool:
         return self._config.use_test
 
@@ -164,6 +178,8 @@ class CCAI:
                 timeout=timeout
             )
             response.raise_for_status()
+            if response.status_code == 204:
+                return cast(Dict[str, Any], {})
             return cast(Dict[str, Any], response.json())
         except requests.HTTPError as e:
             if e.response is not None:
@@ -205,6 +221,8 @@ class CCAI:
                 timeout=timeout
             )
             response.raise_for_status()
+            if response.status_code == 204:
+                return cast(Dict[str, Any], {})
             return cast(Dict[str, Any], response.json())
         except requests.HTTPError as e:
             if e.response is not None:
