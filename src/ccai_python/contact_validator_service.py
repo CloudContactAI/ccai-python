@@ -10,14 +10,14 @@ from pydantic import BaseModel
 
 
 class EmailValidationResult(BaseModel):
-    contact: str
+    contactField: str
     type: str
     status: str
     metadata: Dict[str, Any] = {}
 
 
 class PhoneValidationResult(BaseModel):
-    contact: str
+    contactField: str
     type: str
     status: str
     metadata: Dict[str, Any] = {}
