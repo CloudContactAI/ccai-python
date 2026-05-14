@@ -82,8 +82,9 @@ def main() -> None:
     ln3        = must_env("CCAI_TEST_LAST_NAME_3")
     webhook_url = must_env("WEBHOOK_URL")
 
-    # Create client pointing at test environment
-    client = CCAI(client_id=client_id, api_key=api_key, use_test=True)
+    # Use CCAI_BASE_URL if set (local dev), otherwise fall back to test environment
+    client = CCAI(client_id=client_id, api_key=api_key,
+                  use_test=not bool(os.environ.get('CCAI_BASE_URL')))
 
     print("==============================================")
     print("  CCAI Python SDK Integration Tests")
@@ -593,6 +594,36 @@ def main() -> None:
         if campaign_brand_id:
             client.brands.delete(campaign_brand_id)
     run("42 Campaign.delete", test_42)
+
+    # ── Contact Validator ─────────────────────────────────────────────────────────
+
+    # 43 — ContactValidator.validate_email
+    def test_43():
+        resp = client.contact_validator.validate_email(email1)
+        if not resp.status:
+            raise RuntimeError("status is empty")
+    run("43 ContactValidator.validate_email", test_43)
+
+    # 44 — ContactValidator.validate_emails
+    def test_44():
+        resp = client.contact_validator.validate_emails([email1, email2])
+        if resp.summary.total != 2:
+            raise RuntimeError(f"expected summary.total=2, got {resp.summary.total}")
+    run("44 ContactValidator.validate_emails", test_44)
+
+    # 45 — ContactValidator.validate_phone
+    def test_45():
+        resp = client.contact_validator.validate_phone(phone1)
+        if not resp.status:
+            raise RuntimeError("status is empty")
+    run("45 ContactValidator.validate_phone", test_45)
+
+    # 46 — ContactValidator.validate_phones
+    def test_46():
+        resp = client.contact_validator.validate_phones([{"phone": phone1}, {"phone": phone2}])
+        if resp.summary.total != 2:
+            raise RuntimeError(f"expected summary.total=2, got {resp.summary.total}")
+    run("46 ContactValidator.validate_phones", test_46)
 
     # ── Cleanup & Results ─────────────────────────────────────────────────────────
     os.unlink(png_path)
