@@ -18,6 +18,7 @@ from .webhook import Webhook
 from .contact_service import Contact
 from .brand_service import Brand
 from .campaign_service import Campaign as CampaignService
+from .contact_validator_service import ContactValidator
 
 
 class CCAIConfig(BaseModel):
@@ -110,6 +111,7 @@ class CCAI:
         self.contact = Contact(self)
         self.brands = Brand(self)
         self.campaigns = CampaignService(self)
+        self.contact_validator = ContactValidator(self)
 
     def _resolve_url(
         self,
