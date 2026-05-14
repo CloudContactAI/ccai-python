@@ -204,6 +204,42 @@ response = ccai.contact.set_do_not_text(
 print(f"Contact {response.contact_id} do not text removed: {response.do_not_text}")
 ```
 
+### Contact Validator
+
+Validate email addresses and phone numbers.
+
+> Bulk endpoints accept up to 50 contacts per request and are processed server-side in chunks.
+
+```python
+from ccai_python import CCAI
+
+ccai = CCAI(
+    client_id="YOUR-CLIENT-ID",
+    api_key="YOUR-API-KEY"
+)
+
+# Validate a single email
+email_result = ccai.contact_validator.validate_email("user@example.com")
+print(email_result.status)  # "valid" | "invalid" | "risky"
+print(email_result.metadata.get("safe_to_send"))  # True | False
+
+# Validate multiple emails (up to 50, processed server-side in chunks)
+bulk_emails = ccai.contact_validator.validate_emails(["user@example.com", "bad@invalid.xyz"])
+print(bulk_emails.summary.model_dump())  # {"total": 2, "valid": 1, "invalid": 1, "risky": 0, "landline": 0}
+
+# Validate a single phone number
+phone_result = ccai.contact_validator.validate_phone("+15551234567", country_code="US")
+print(phone_result.status)  # "valid" | "invalid" | "landline"
+print(phone_result.metadata.get("carrier_type"))  # "mobile" | "landline" | "voip"
+
+# Validate multiple phone numbers (up to 50, processed server-side in chunks)
+bulk_phones = ccai.contact_validator.validate_phones([
+    {"phone": "+15551234567"},
+    {"phone": "+15559876543", "countryCode": "US"}
+])
+print(bulk_phones.summary.model_dump())  # {"total": 2, "valid": 1, "invalid": 0, "risky": 0, "landline": 1}
+```
+
 ### Webhooks
 
 ```python
@@ -432,6 +468,7 @@ ccai.campaigns.delete(campaign["id"])
 - Campaign registration and management for TCR carrier vetting
 - Webhook management (register, update, list, delete)
 - Webhook event handling for web frameworks
+- Validate email addresses (valid/invalid/risky) and phone numbers (valid/invalid/landline)
 - Upload images to S3 with signed URLs
 - Variable substitution in messages
 - Progress tracking callbacks
