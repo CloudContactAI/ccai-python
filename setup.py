@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='ccai',  # 🟢 CLI command will be `ccai`
-    version='1.0.1',
+    name='ccai',
+    version='1.1.0',
     description='A CLI and Python client for sending SMS via CloudContactAI',
     author='CloudContactAI LLC',
     license='MIT',
