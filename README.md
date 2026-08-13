@@ -91,7 +91,6 @@ def track_progress(status):
 # Create options with progress tracking
 options = SMSOptions(
     timeout=60,
-    retries=3,
     on_progress=track_progress
 )
 
@@ -319,22 +318,18 @@ def verify_and_handle_webhook(signature, client_id, event_hash, secret):
         print("Invalid signature")
 
 # Create a webhook handler for web frameworks
-def handle_message_sent(event):
-    print(f"Message sent: {event.message} to {event.to}")
+def handle_event(event):
+    if event.event_type == WebhookEventType.MESSAGE_SENT:
+        print(f"Message sent: {event.data.get('Message')} to {event.data.get('To')}")
+    elif event.event_type == WebhookEventType.MESSAGE_RECEIVED:
+        print(f"Message received: {event.data.get('Message')} from {event.data.get('From')}")
 
-def handle_message_received(event):
-    print(f"Message received: {event.message} from {event.from_}")
-
-handlers = {
-    'on_message_sent': handle_message_sent,
-    'on_message_received': handle_message_received
-}
-
-webhook_handler = ccai.webhook.create_handler(handlers)
+webhook_handler = ccai.webhook.create_handler({'on_event': handle_event})
 
 # Use with Flask
-from flask import Flask, request, jsonify
+import os
 import json
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -438,6 +433,8 @@ campaign = ccai.campaigns.create({
     "subUseCases": ["CUSTOMER_CARE", "TWO_FACTOR_AUTHENTICATION", "ACCOUNT_NOTIFICATION"],
     "description": "Security codes and support messaging.",
     "messageFlow": "Users opt-in via signup form at https://example.com/signup",
+    "termsLink": "https://example.com/terms",
+    "privacyLink": "https://example.com/privacy",
     "hasEmbeddedLinks": True,
     "hasEmbeddedPhone": False,
     "isAgeGated": False,
@@ -477,6 +474,8 @@ ccai.campaigns.delete(campaign["id"])
 `TWO_FACTOR_AUTHENTICATION`, `ACCOUNT_NOTIFICATION`, `CUSTOMER_CARE`, `DELIVERY_NOTIFICATION`, `FRAUD_ALERT`, `HIGHER_EDUCATION`, `LOW_VOLUME_MIXED`, `MARKETING`, `MIXED`, `POLLING_VOTING`, `PUBLIC_SERVICE_ANNOUNCEMENT`, `SECURITY_ALERT`
 
 > Note: `MIXED` and `LOW_VOLUME_MIXED` campaigns require 2–3 `subUseCases`.
+
+> `termsLink` and `privacyLink` are optional fields on the campaign dict.
 
 #### Sub-Use Cases
 
