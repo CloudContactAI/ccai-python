@@ -289,5 +289,47 @@ class TestSMS(unittest.TestCase):
             )
 
 
+    @patch.object(CCAI, 'request')
+    def test_send_with_template_id(self, mock_request):
+        """Test sending SMS with a template ID"""
+        mock_request.return_value = {
+            "id": "msg-tpl-1",
+            "status": "sent",
+            "campaign_id": "camp-tpl-1"
+        }
+
+        response = self.ccai.sms.send_with_template(
+            accounts=[self.account],
+            template_id=12345,
+            title="Template Campaign"
+        )
+
+        self.assertEqual(response.id, "msg-tpl-1")
+
+        call_args = mock_request.call_args
+        payload = call_args.kwargs.get("data") or call_args[1].get("data")
+        self.assertEqual(payload["templateId"], 12345)
+        self.assertEqual(payload["message"], "")
+
+    @patch.object(CCAI, 'request')
+    def test_send_single_with_template_id(self, mock_request):
+        """Test sending SMS to a single recipient with a template ID"""
+        mock_request.return_value = {"id": "msg-tpl-2", "status": "sent"}
+
+        response = self.ccai.sms.send_single_with_template(
+            first_name="Jane",
+            last_name="Smith",
+            phone="+14156961732",
+            template_id=99,
+            title="Single Template Campaign"
+        )
+
+        self.assertEqual(response.id, "msg-tpl-2")
+
+        call_args = mock_request.call_args
+        payload = call_args.kwargs.get("data") or call_args[1].get("data")
+        self.assertEqual(payload["templateId"], 99)
+
+
 if __name__ == '__main__':
     unittest.main()
