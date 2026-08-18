@@ -1,6 +1,6 @@
 # CCAI Python Client
 
-Version: 1.1.0
+Version: 1.2.0
 
 A Python client for interacting with the CloudContactAI API.
 
