@@ -30,8 +30,9 @@ class Account(BaseModel):
 class SMSCampaign(BaseModel):
     """SMS campaign data model"""
     accounts: List[Account] = Field(..., description="List of recipient accounts")
-    message: str = Field(..., description="Message content with optional variables")
+    message: str = Field(default="", description="Message content with optional variables")
     title: str = Field(..., description="Campaign title")
+    template_id: Optional[int] = Field(default=None, alias="templateId", description="Optional template ID for template-controlled accounts")
 
 
 class SMSResponse(BaseModel):
@@ -99,7 +100,8 @@ class SMS:
         message: str,
         title: str,
         sender_phone: Optional[str] = None,
-        options: Optional[SMSOptions] = None
+        options: Optional[SMSOptions] = None,
+        template_id: Optional[int] = None
     ) -> SMSResponse:
         if not accounts:
             raise ValueError("At least one account is required")
@@ -151,6 +153,8 @@ class SMS:
         }
         if sender_phone:
             payload["senderPhone"] = sender_phone
+        if template_id is not None:
+            payload["templateId"] = template_id
 
         try:
             if options and options.on_progress:
@@ -192,4 +196,29 @@ class SMS:
             message_data=custom_data
         )
         return self.send([account], message, title, sender_phone, options)
+
+    def send_with_template(
+        self,
+        accounts: List[Union[Account, Dict[str, str]]],
+        template_id: int,
+        title: str,
+        sender_phone: Optional[str] = None,
+        options: Optional[SMSOptions] = None
+    ) -> SMSResponse:
+        """Send SMS using a pre-approved template (for template-controlled accounts)."""
+        return self.send(accounts, "", title, sender_phone, options, template_id)
+
+    def send_single_with_template(
+        self,
+        first_name: str,
+        last_name: str,
+        phone: str,
+        template_id: int,
+        title: str,
+        sender_phone: Optional[str] = None,
+        options: Optional[SMSOptions] = None
+    ) -> SMSResponse:
+        """Send SMS to a single recipient using a pre-approved template."""
+        account = Account(first_name=first_name, last_name=last_name, phone=phone)
+        return self.send_with_template([account], template_id, title, sender_phone, options)
 

@@ -49,6 +49,30 @@ campaign_response = ccai.sms.send(
 print(f"Campaign sent with ID: {campaign_response.campaign_id}")
 ```
 
+### SMS — Template-Controlled Accounts
+
+If an account has been configured to enforce template-only messaging, all campaigns must reference a pre-approved template ID. Sending a free-text message to such an account will result in a `422` error.
+
+```python
+# Send to multiple recipients using a template
+response = ccai.sms.send_with_template(
+    accounts=accounts,
+    template_id=12345,   # the ID of the approved template
+    title="My Campaign"
+)
+
+# Send to a single recipient using a template
+response = ccai.sms.send_single_with_template(
+    first_name="John",
+    last_name="Doe",
+    phone="+15551234567",
+    template_id=12345,
+    title="My Campaign"
+)
+```
+
+The message body is resolved server-side from the template. Variable substitution (e.g. `${firstName}`) is applied automatically using the recipient's account data.
+
 ### MMS
 
 ```python
