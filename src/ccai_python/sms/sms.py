@@ -105,7 +105,7 @@ class SMS:
     ) -> SMSResponse:
         if not accounts:
             raise ValueError("At least one account is required")
-        if not message:
+        if not message and template_id is None:
             raise ValueError("Message is required")
         if not title:
             raise ValueError("Campaign title is required")

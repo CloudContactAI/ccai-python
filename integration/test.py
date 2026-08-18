@@ -1,7 +1,8 @@
 """
-Python SDK integration tests — 52 tests
+Python SDK integration tests — 54 tests
 Covers: SMS (1-6), MMS (7-17), Email (18-22), Webhook (23-29), Contact (30-31),
-Brands (32-36), Campaigns (37-42), ContactValidator (43-46), Negative cases (47-52)
+Brands (32-36), Campaigns (37-42), ContactValidator (43-46), Negative cases (47-52),
+SMS Templates (53-54)
 
 Test results use three states:
   PASS — the test ran and all assertions held
@@ -133,6 +134,7 @@ REQUIRED_ENV = [
     "CCAI_TEST_FIRST_NAME_3",
     "CCAI_TEST_LAST_NAME_3",
     "WEBHOOK_URL",
+    "CCAI_TEST_TEMPLATE_ID",
 ]
 
 
@@ -158,6 +160,7 @@ def main() -> None:
     ln2 = os.environ["CCAI_TEST_LAST_NAME_2"]
     fn3 = os.environ["CCAI_TEST_FIRST_NAME_3"]
     ln3 = os.environ["CCAI_TEST_LAST_NAME_3"]
+    template_id = int(os.environ["CCAI_TEST_TEMPLATE_ID"])
 
     # Unique per-run suffix so parallel SDK runs don't collide on the same webhook URL
     run_id = f"python-{int(time.time())}"
@@ -843,6 +846,25 @@ def main() -> None:
             )
             assert_send_response(resp)
         run("52 PERMISSIVE: MMS.send with nonexistent fileKey (API accepts)", test_52)
+
+        print("\n--- SMS Templates ---")
+
+        def test_53():
+            resp = client.sms.send_with_template(
+                [
+                    Account(first_name=fn1, last_name=ln1, phone=phone1),
+                    Account(first_name=fn2, last_name=ln2, phone=phone2),
+                ], template_id=template_id, title="Python Template Test"
+            )
+            assert_send_response(resp)
+        run("53 SMS.send_with_template", test_53)
+
+        def test_54():
+            resp = client.sms.send_single_with_template(
+                first_name=fn1, last_name=ln1, phone=phone1, template_id=template_id, title="Python Single Template Test"
+            )
+            assert_send_response(resp)
+        run("54 SMS.send_single_with_template", test_54)
 
     finally:
         # ── Cleanup ─────────────────────────────────────────────────────────────
