@@ -2,7 +2,7 @@
 Python SDK integration tests — 54 tests
 Covers: SMS (1-6), MMS (7-17), Email (18-22), Webhook (23-29), Contact (30-31),
 Brands (32-36), Campaigns (37-42), ContactValidator (43-46), Negative cases (47-52),
-SMS Templates (53-54)
+SMS Templates (53-54, dedicated template account)
 
 Test results use three states:
   PASS — the test ran and all assertions held
@@ -134,7 +134,6 @@ REQUIRED_ENV = [
     "CCAI_TEST_FIRST_NAME_3",
     "CCAI_TEST_LAST_NAME_3",
     "WEBHOOK_URL",
-    "CCAI_TEST_TEMPLATE_ID",
 ]
 
 
@@ -160,7 +159,7 @@ def main() -> None:
     ln2 = os.environ["CCAI_TEST_LAST_NAME_2"]
     fn3 = os.environ["CCAI_TEST_FIRST_NAME_3"]
     ln3 = os.environ["CCAI_TEST_LAST_NAME_3"]
-    template_id = int(os.environ["CCAI_TEST_TEMPLATE_ID"])
+    template_id = int(os.environ["CCAI_TEST_TEMPLATE_ID"]) if os.environ.get("CCAI_TEST_TEMPLATE_ID") else None
 
     # Unique per-run suffix so parallel SDK runs don't collide on the same webhook URL
     run_id = f"python-{int(time.time())}"
@@ -849,8 +848,21 @@ def main() -> None:
 
         print("\n--- SMS Templates ---")
 
+        # Templates run against a separate, dedicated account (CCAI_TEMPLATE_CLIENT_ID/
+        # API_KEY): the main test account can't have template usage configured, since
+        # that starts requiring a template_id on every campaign — including the plain
+        # SMS/MMS/Email sends tested above.
+        template_client_id = os.environ.get("CCAI_TEMPLATE_CLIENT_ID")
+        template_api_key = os.environ.get("CCAI_TEMPLATE_API_KEY")
+
+        def template_client():
+            if not template_client_id or not template_api_key or not template_id:
+                raise SkipTest("CCAI_TEMPLATE_CLIENT_ID/CCAI_TEMPLATE_API_KEY/CCAI_TEST_TEMPLATE_ID not set")
+            return CCAI(client_id=template_client_id, api_key=template_api_key,
+                        use_test=not bool(os.environ.get('CCAI_BASE_URL')))
+
         def test_53():
-            resp = client.sms.send_with_template(
+            resp = template_client().sms.send_with_template(
                 [
                     Account(first_name=fn1, last_name=ln1, phone=phone1),
                     Account(first_name=fn2, last_name=ln2, phone=phone2),
@@ -860,7 +872,7 @@ def main() -> None:
         run("53 SMS.send_with_template", test_53)
 
         def test_54():
-            resp = client.sms.send_single_with_template(
+            resp = template_client().sms.send_single_with_template(
                 first_name=fn1, last_name=ln1, phone=phone1, template_id=template_id, title="Python Single Template Test"
             )
             assert_send_response(resp)
