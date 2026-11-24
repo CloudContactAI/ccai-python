@@ -15,6 +15,7 @@ from .brand_service import Brand
 from .campaign_service import Campaign as CampaignService
 from .contact_validator_service import (
     ContactValidator,
+    EmailValidationChecks,
     EmailValidationResult,
     PhoneValidationResult,
     ValidationSummary,
@@ -47,6 +48,7 @@ __all__ = [
     'Brand',
     'CampaignService',
     'ContactValidator',
+    'EmailValidationChecks',
     'EmailValidationResult',
     'PhoneValidationResult',
     'ValidationSummary',
